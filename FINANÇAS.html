@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Controle de Finanças - Neidivan</title>
+  <style>
+    :root{
+      --green-700:#1f7a2b;
+      --green-600:#2e9b30;
+      --green-500:#4caf50;
+      --bg:#f4f7f3;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --danger:#e74c3c;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background:linear-gradient(90deg,#f4f7f3 0 20%, #fff 20%);
+      color:#111;
+      padding:20px;
+    }
+    .container{
+      max-width:1100px;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:320px 1fr;
+      gap:20px;
+      align-items:start;
+    }
+
+    /* SIDEBAR / LOGO */
+    .brand {
+      background:var(--card);
+      border-radius:12px;
+      padding:18px;
+      box-shadow:0 6px 18px rgba(16,24,40,0.06);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:center;
+    }
+    .logo {
+      width:220px;
+      height: auto;
+      object-fit:contain;
+      border-radius:6px;
+      box-shadow:0 3px 9px rgba(0,0,0,0.06);
+      background:linear-gradient(180deg,white, #f7f7f7);
+    }
+    .brand h2{margin:0;color:var(--green-700);font-size:20px}
+    .brand p{margin:0;color:var(--muted);font-size:14px;text-align:center}
+
+    /* MAIN CARD */
+    .card {
+      background:var(--card);
+      border-radius:12px;
+      padding:18px;
+      box-shadow:0 6px 18px rgba(16,24,40,0.06);
+    }
+
+    .row {
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    .controls{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .field {display:flex;flex-direction:column;gap:6px}
+    label{font-size:13px;color:var(--muted)}
+    input[type="text"], input[type="number"], input[type="date"], select {
+      padding:8px 10px;border-radius:8px;border:1px solid #e6e6e6;background:#fff;min-width:160px;
+      font-size:14px;
+    }
+    button{
+      background:var(--green-600);color:white;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;
+      font-weight:600;
+    }
+    button.ghost{background:transparent;color:var(--green-600);border:1px solid var(--green-600)}
+    button.danger{background:var(--danger)}
+
+    /* tables */
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th,td{padding:10px;text-align:left;border-bottom:1px solid #f0f0f0;font-size:14px}
+    th{color:var(--muted);font-weight:600}
+    .amount{font-weight:700}
+    .amount.income{color:#0b8a42}
+    .amount.expense{color:#d04545}
+    .summary {
+      display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;
+    }
+    .summary .box{
+      background:linear-gradient(180deg, rgba(255,255,255,0.85), rgba(250,250,250,0.85));
+      padding:12px;border-radius:10px;min-width:160px;text-align:center;box-shadow:0 3px 8px rgba(0,0,0,0.04)
+    }
+    .summary .box h3{margin:0;font-size:20px}
+    .summary .box p{margin:4px 0 0;color:var(--muted)}
+
+    .actions{display:flex;gap:8px;justify-content:flex-end}
+    .small{font-size:12px;padding:6px 8px;border-radius:8px}
+    .muted{color:var(--muted);font-size:13px}
+
+    /* responsive */
+    @media (max-width:980px){
+      .container{grid-template-columns:1fr;max-width:760px}
+      .logo{width:180px}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <aside class="brand">
+      <!-- Coloque o arquivo de imagem na mesma pasta que este HTML -->
+      <img src="WhatsApp Image 2025-11-05 at 09.29.34.jpeg" alt="Logotipo" class="logo" onerror="this.style.display='none'"/>
+      <h2>Neidivan Ribeiro</h2>
+      <p class="muted">Controle de Despesas Pessoais</p>
+      <p class="muted">Adicione proventos e despesas — o sistema calculará o saldo automaticamente.</p>
+      <div style="width:100%;margin-top:8px" class="actions">
+        <button id="exportCsv" class="small ghost">Exportar CSV</button>
+        <button id="clearAll" class="small danger">Limpar</button>
+      </div>
+    </aside>
+
+    <main class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Lançamentos</h3>
+        <div class="muted">Dados salvos no navegador</div>
+      </div>
+
+      <form id="entryForm" style="margin-top:12px">
+        <div class="controls">
+          <div class="field">
+            <label for="type">Tipo</label>
+            <select id="type">
+              <option value="income">Entrada (Provento)</option>
+              <option value="expense">Saída (Despesa)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="category">Categoria</label>
+            <input id="category" type="text" placeholder="Ex: Salário, Luz, Supermercado" required />
+          </div>
+          <div class="field">
+            <label for="value">Valor (R$)</label>
+            <input id="value" type="number" step="0.01" placeholder="0.00" required />
+          </div>
+          <div class="field">
+            <label for="date">Data</label>
+            <input id="date" type="date" />
+          </div>
+          <div style="display:flex;align-items:end;">
+            <button id="addBtn" type="submit">Adicionar</button>
+          </div>
+        </div>
+      </form>
+
+      <div style="margin-top:8px; overflow:auto;">
+        <table id="entriesTable" aria-live="polite">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Categoria</th>
+              <th>Data</th>
+              <th>Valor</th>
+              <th style="text-align:right">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="entriesTbody">
+            <!-- Linhas adicionadas por JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="summary" id="summary">
+        <div class="box">
+          <h3 id="totalIncome">R$ 0,00</h3>
+          <p>Entradas</p>
+        </div>
+        <div class="box">
+          <h3 id="totalExpense">R$ 0,00</h3>
+          <p>Despesas</p>
+        </div>
+        <div class="box">
+          <h3 id="finalBalance">R$ 0,00</h3>
+          <p>Saldo Final</p>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center">
+        <div class="muted">Dicas: clique em editar para ajustar um lançamento.</div>
+        <div>
+          <button id="sampleData" class="small ghost">Carregar Exemplo</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ---------- UTILITÁRIOS ----------
+    const $ = sel => document.querySelector(sel);
+    const formatBRL = (n) => {
+      return Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+
+    // ---------- STORAGE ----------
+    const STORAGE_KEY = 'controle_financas_items_v1';
+    function saveItems(items){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+    function loadItems(){
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch(e){
+        console.error('Erro ao ler storage', e);
+        return [];
+      }
+    }
+
+    // ---------- APP STATE ----------
+    let items = loadItems(); // {id, type:'income'|'expense', category, value(number), date}
+
+    // ---------- RENDER ----------
+    const tbody = $('#entriesTbody');
+    const totalIncomeEl = $('#totalIncome');
+    const totalExpenseEl = $('#totalExpense');
+    const finalBalanceEl = $('#finalBalance');
+
+    function render(){
+      // clear table
+      tbody.innerHTML = '';
+
+      // totals
+      let totalIncome = 0;
+      let totalExpense = 0;
+
+      items.forEach(item => {
+        const tr = document.createElement('tr');
+
+        const tdType = document.createElement('td');
+        tdType.textContent = (item.type === 'income') ? 'Entrada' : 'Saída';
+        tdType.className = 'muted';
+
+        const tdCat = document.createElement('td');
+        tdCat.textContent = item.category;
+
+        const tdDate = document.createElement('td');
+        tdDate.textContent = item.date || '-';
+
+        const tdVal = document.createElement('td');
+        tdVal.className = 'amount ' + (item.type === 'income' ? 'income' : 'expense');
+        tdVal.textContent = (item.type === 'income' ? '+ ' : '- ') + formatBRL(item.value);
+
+        const tdActions = document.createElement('td');
+        tdActions.style.textAlign = 'right';
+
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Editar';
+        editBtn.className = 'small ghost';
+        editBtn.onclick = () => editItem(item.id);
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Remover';
+        delBtn.className = 'small';
+        delBtn.style.marginLeft = '6px';
+        delBtn.onclick = () => removeItem(item.id);
+
+        tdActions.appendChild(editBtn);
+        tdActions.appendChild(delBtn);
+
+        tr.appendChild(tdType);
+        tr.appendChild(tdCat);
+        tr.appendChild(tdDate);
+        tr.appendChild(tdVal);
+        tr.appendChild(tdActions);
+
+        tbody.appendChild(tr);
+
+        if (item.type === 'income') totalIncome += Number(item.value);
+        else totalExpense += Number(item.value);
+      });
+
+      totalIncomeEl.textContent = formatBRL(totalIncome);
+      totalExpenseEl.textContent = formatBRL(totalExpense);
+      const balance = totalIncome - totalExpense;
+      finalBalanceEl.textContent = formatBRL(balance);
+      finalBalanceEl.style.color = balance < 0 ? '#d04545' : '#0b8a42';
+
+      // save
+      saveItems(items);
+    }
+
+    // ---------- CRUD ----------
+    function addItem(item){
+      item.id = Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+      items.push(item);
+      render();
+    }
+
+    function editItem(id){
+      const item = items.find(it => it.id === id);
+      if(!item) return;
+      // populate form
+      $('#type').value = item.type;
+      $('#category').value = item.category;
+      $('#value').value = item.value;
+      $('#date').value = item.date || '';
+      // change add button to 'Salvar'
+      const addBtn = $('#addBtn');
+      addBtn.textContent = 'Salvar';
+      addBtn.dataset.editing = id;
+      addBtn.style.background = 'var(--green-700)';
+    }
+
+    function removeItem(id){
+      if(!confirm('Remover este lançamento?')) return;
+      items = items.filter(it => it.id !== id);
+      render();
+    }
+
+    // ---------- FORM HANDLING ----------
+    $('#entryForm').addEventListener('submit', function(ev){
+      ev.preventDefault();
+      const type = $('#type').value;
+      const category = $('#category').value.trim();
+      const valueRaw = $('#value').value;
+      const date = $('#date').value;
+
+      // validation
+      if(!category){ alert('Preencha a categoria.'); return; }
+      if(valueRaw === '' || isNaN(Number(valueRaw))){ alert('Valor inválido.'); return; }
+      const value = Number(parseFloat(valueRaw).toFixed(2));
+
+      const addBtn = $('#addBtn');
+      const editingId = addBtn.dataset.editing;
+
+      if(editingId){
+        // save edit
+        const idx = items.findIndex(it=>it.id === editingId);
+        if(idx >= 0){
+          items[idx].type = type;
+          items[idx].category = category;
+          items[idx].value = value;
+          items[idx].date = date;
+        }
+        addBtn.textContent = 'Adicionar';
+        delete addBtn.dataset.editing;
+        addBtn.style.background = '';
+      } else {
+        // new item
+        addItem({ type, category, value, date });
+      }
+
+      // reset form
+      $('#entryForm').reset();
+      render();
+    });
+
+    // ---------- SAMPLE / EXPORT / CLEAR ----------
+    $('#sampleData').addEventListener('click', (e) => {
+      e.preventDefault();
+      if(!confirm('Carregar dados de exemplo e substituir o que está salvo?')) return;
+      items = [
+        { id:'a1', type:'income', category:'Salário Base', value:1518.00, date:'' },
+        { id:'a2', type:'income', category:'Gratificação', value:1900.00, date:'' },
+        { id:'d1', type:'expense', category:'Crédito do Trabalhador', value:530.80, date:'' },
+        { id:'d2', type:'expense', category:'INSS', value:303.56, date:'' },
+        { id:'d3', type:'expense', category:'IRRF', value:28.65, date:'' },
+        { id:'d4', type:'expense', category:'Adiantamento Salarial', value:594.60, date:'' },
+        { id:'e1', type:'expense', category:'Luz', value:420.00, date:'' },
+        { id:'e2', type:'expense', category:'Água', value:115.00, date:'' },
+        { id:'e3', type:'expense', category:'Fatura', value:420.00, date:'' },
+        { id:'e4', type:'expense', category:'TV', value:287.00, date:'' },
+        { id:'e5', type:'expense', category:'Internet', value:100.00, date:'' },
+        { id:'e6', type:'expense', category:'Carne', value:200.00, date:'' },
+        { id:'e7', type:'expense', category:'Pai', value:100.00, date:'' },
+        { id:'e8', type:'expense', category:'Supermercado', value:350.00, date:'' },
+        { id:'e9', type:'expense', category:'Farmácia', value:180.00, date:'' },
+        { id:'e10', type:'expense', category:'Combustível', value:250.00, date:'' },
+        { id:'e11', type:'expense', category:'Transporte', value:90.00, date:'' },
+        { id:'e12', type:'expense', category:'Lazer', value:150.00, date:'' },
+      ];
+      render();
+    });
+
+    $('#clearAll').addEventListener('click', () => {
+      if(!confirm('Excluir todos os lançamentos e limpar o armazenamento?')) return;
+      items = [];
+      saveItems(items);
+      render();
+    });
+
+    // Export CSV
+    function toCSV(items){
+      const header = ['tipo','categoria','data','valor'];
+      const rows = items.map(it => [
+        it.type === 'income' ? 'entrada' : 'saida',
+        `"${(it.category||'').replace(/"/g,"'")}"`,
+        it.date || '',
+        Number(it.value).toFixed(2)
+      ].join(','));
+      return [header.join(','), ...rows].join('\\n');
+    }
+    $('#exportCsv').addEventListener('click', () => {
+      const csv = toCSV(items);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'controle_financas.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    // initial render
+    render();
+  </script>
+</body>
+</html>
